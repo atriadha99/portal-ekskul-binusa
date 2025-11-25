@@ -2,6 +2,7 @@ import EkskulCards from "../components/EkskulCards";
 import FormPendaftaran from "../components/FormPendaftaran";
 import { Box, Flex, Heading, Button, Container, Link, HStack, Text, VStack, SimpleGrid } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
+import NewsSection from "../components/NewsSection";
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ export default function LandingPage() {
       </Box>
 
       <Box>
+        <NewsSection/>
         <EkskulCards />
         <FormPendaftaran />
       </Box>
