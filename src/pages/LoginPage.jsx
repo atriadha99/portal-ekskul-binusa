@@ -1,22 +1,47 @@
 import { useState } from "react";
 import { Box, Button, Container, FormControl, FormLabel, Heading, Input, Stack, Text, useToast, Flex } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../supabaseClient"; // Import Supabase
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const toast = useToast();
 
-  const handleLogin = () => {
-    if (username === "admin" && password === "admin123") {
-      
-      localStorage.setItem("isAdminAuthenticated", "true");
-      
-      toast({ title: "Login Berhasil", status: "success", duration: 2000, position: "top" });
-      navigate("/admin"); 
-    } else {
-      toast({ title: "Username atau Password salah", status: "error", duration: 2000, position: "top" });
+  const handleLogin = async () => {
+    if (!username || !password) {
+      toast({ title: "Isi username dan password", status: "warning" });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Cek ke Database Supabase
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('username', username)
+        .eq('password', password) // Cek password (plain text utk simpel)
+        .single();
+
+      if (error || !data) {
+        toast({ title: "Login Gagal", description: "Username atau password salah", status: "error" });
+      } else {
+        // Login Sukses
+        localStorage.setItem("isAdminAuthenticated", "true");
+        localStorage.setItem("userRole", data.role); // Simpan role (admin/pembina/ketua)
+        localStorage.setItem("userName", data.nama_lengkap);
+        
+        toast({ title: `Selamat Datang, ${data.nama_lengkap}`, status: "success" });
+        navigate("/admin");
+      }
+    } catch (err) {
+      toast({ title: "Terjadi Kesalahan", status: "error" });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -24,8 +49,8 @@ export default function LoginPage() {
     <Flex minH="100vh" align="center" justify="center" bg="gray.100">
       <Container maxW="sm" bg="white" p={8} borderRadius="xl" boxShadow="lg">
         <Box textAlign="center" mb={6}>
-          <Heading size="lg" color="#0A2D5E">Admin Login</Heading>
-          <Text color="gray.500" fontSize="sm">Masuk untuk mengelola data ekskul</Text>
+          <Heading size="lg" color="#0A2D5E">Portal Login</Heading>
+          <Text color="gray.500" fontSize="sm">Masuk sebagai Admin, Guru, atau Ketua</Text>
         </Box>
 
         <Stack spacing={4}>
@@ -33,7 +58,6 @@ export default function LoginPage() {
             <FormLabel>Username</FormLabel>
             <Input 
               type="text" 
-              placeholder="Masukkan username" 
               value={username}
               onChange={(e) => setUsername(e.target.value)}
             />
@@ -43,7 +67,6 @@ export default function LoginPage() {
             <FormLabel>Password</FormLabel>
             <Input 
               type="password" 
-              placeholder="Masukkan password" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && handleLogin()} 
@@ -51,11 +74,8 @@ export default function LoginPage() {
           </FormControl>
 
           <Button 
-            bg="#0A2D5E" 
-            color="white" 
-            _hover={{ bg: "#061b3a" }} 
-            onClick={handleLogin}
-            w="100%"
+            bg="#0A2D5E" color="white" _hover={{ bg: "#061b3a" }} 
+            onClick={handleLogin} w="100%" isLoading={loading}
           >
             Masuk Dashboard
           </Button>
